@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"runtime"
 	"strconv"
 	"time"
 	"unicode"
@@ -70,7 +71,7 @@ const (
 	lastField
 )
 
-// 
+// Frame holds feature frame information.
 type Frame int8
 
 func (f Frame) String() string {
@@ -215,8 +216,11 @@ func (g *Feature) Location() feat.Feature { return Sequence{SeqName: g.SeqName} 
 func handlePanic(f feat.Feature, err *error) {
 	r := recover()
 	if r != nil {
-		e, ok := r.(Error)
+		e, ok := r.(error)
 		if !ok {
+			panic(r)
+		}
+		if _, ok = r.(runtime.Error); ok {
 			panic(r)
 		}
 		*err = e
@@ -420,8 +424,6 @@ func (r *Reader) commentMetaline(line []byte) (f feat.Feature, err error) {
 	default:
 		return nil, ErrNotHandled
 	}
-
-	return
 }
 
 func (r *Reader) metaSeq(moltype, id []byte) (seq.Sequence, error) {
@@ -640,8 +642,6 @@ func (w *Writer) Write(f feat.Feature) (n int, err error) {
 	default:
 		return fmt.Fprintf(w.w, "##sequence-region %s %d %d\n", f.Name(), feat.ZeroToOne(f.Start()), f.End())
 	}
-
-	panic("cannot reach")
 }
 
 // WriteMetaData writes a meta data line to a GFF file. The type of metadata line
